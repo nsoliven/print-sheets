@@ -13,6 +13,7 @@ Every size is measured on the card held upright. The photo window sits centred l
 | Polaroid Go | 53.9 × 66.6 | 46 × 47 | 5 | 15 |
 | Wallet | 63.5 × 88.9 | full card | | 9 |
 | 4 × 6 photo | 101.6 × 152.4 | full card | | 3 |
+| 8 × 10 photo | 203.2 × 254 | full card | | 1 |
 
 Card and photo sizes are Fujifilm's and Polaroid's published film sizes. Border placement follows measured film; Fujifilm's own spec rounds the Mini and Wide to 85 mm tall.
 
@@ -30,4 +31,4 @@ Ties prefer fewer blocks, then more upright cards. The whole layout is centred o
 
 Instant-film cards share their edges with no gap, so one cut separates two cards and a slightly-off cut only nibbles white frame. Cut lines are 0.3 pt light grey on each card edge; turn them off in the ⋯ menu.
 
-Full-bleed sizes (Wallet, 4 × 6) have a 2 mm gap, and each photo runs 1 mm past its cut line into it, so a slightly-off cut still lands on the photo instead of white paper. Bleed stops at the printable edge of the page.
+Full-bleed sizes (Wallet, 4 × 6, 8 × 10) have a 2 mm gap, and each photo runs 1 mm past its cut line into it, so a slightly-off cut still lands on the photo instead of white paper. Bleed stops at the printable edge of the page.

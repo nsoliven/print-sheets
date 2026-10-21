@@ -2,7 +2,7 @@
 
 ## Scope
 
-A local, single-file web app that lays out photos as instant-film-style prints on US Letter paper and exports print-ready PDFs at true size. The owner prints on an Epson ET-2850 (Epson driver) from a Mac, on Canon GP-701 glossy and Hammermill 28 lb plain paper.
+A local, single-file web app that lays out photos as instant-film-style prints on US Letter paper and exports print-ready PDFs at true size. The reference setup is an Epson ET-2850 (Epson driver) on macOS, Canon GP-701 glossy and Hammermill 28 lb plain paper, and BESCRCL 8 × 10 frames.
 
 ## Repository Map
 
@@ -28,6 +28,7 @@ A local, single-file web app that lays out photos as instant-film-style prints o
 - Keep rarely used options in the ⋯ menu. The primary button is always the one next step.
 - Dev and preview servers bind to `127.0.0.1` only.
 - Do not commit `dist/`, `out/`, or personal photos. Test photos live outside the repo.
+- This repository is public. Keep personal details out of code, docs, commits and PRs: no home paths, hostnames, private repos or personal notes. Name hardware and paper only as a tested setup.
 
 ## Verification
 
@@ -36,7 +37,7 @@ bun run typecheck
 bun run test
 bun run build
 bun run e2e -- --photos /path/to/sample/photos
-for f in instax-mini polaroid instax-wide polaroid-go; do bun run measure out/measure-$f.pdf $f; done
+for f in instax-mini polaroid instax-wide polaroid-go wallet photo-4x6 photo-8x10; do bun run measure out/measure-$f.pdf $f; done
 git diff --check
 ```
 

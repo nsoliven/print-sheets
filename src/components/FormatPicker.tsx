@@ -3,13 +3,27 @@ import { useEffect, useRef, useState } from "react";
 import { FORMATS, type Format, type FormatId } from "../lib/formats";
 import { layoutFor } from "../lib/layout";
 
-/** A tiny drawing of the card. Every size uses the same scale, so they compare truthfully. */
+/** Room for a drawing in the picker; anything bigger runs off the edge rather than shrinking. */
+const SIL_BOX = { w: 52, h: 56 };
+
+/**
+ * A tiny drawing of the card. Every size uses the same scale, so they compare truthfully. A size too
+ * big for the picker (8 × 10) is cut off by its box instead of being drawn smaller than it is.
+ */
 export function Silhouette({ f, scale = 0.36 }: { f: Format; scale?: number }) {
-  return (
+  const big = f.w * scale > SIL_BOX.w || f.h * scale > SIL_BOX.h;
+  const drawing = (
     <svg width={f.w * scale} height={f.h * scale} viewBox={`0 0 ${f.w} ${f.h}`} className="silhouette" aria-hidden>
       <rect width={f.w} height={f.h} rx={1.5} className="sil-card" />
       <rect x={f.window.x} y={f.window.y} width={f.window.w} height={f.window.h} className="sil-window" />
     </svg>
+  );
+  return big ? (
+    <span className="sil-clip" style={{ width: SIL_BOX.w, height: SIL_BOX.h }}>
+      {drawing}
+    </span>
+  ) : (
+    drawing
   );
 }
 
