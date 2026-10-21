@@ -240,6 +240,10 @@ await shot("08-picker");
 await page.keyboard.press("Escape");
 await chooseFormat("8 × 10 photo");
 await shot("08b-8x10");
+await page.dblclick(".sheet .card .hit-photo");
+await page.waitForSelector(".closeup .frame-lip");
+await shot("08c-8x10-closeup");
+await page.click('.closeup button:has-text("Done")');
 
 await page.emulateMedia({ colorScheme: "dark" });
 await shot("09-dark");

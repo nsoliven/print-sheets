@@ -6,7 +6,8 @@ import { MoreMenu } from "./components/MoreMenu";
 import { PrintPanel } from "./components/PrintPanel";
 import { Sheet } from "./components/Sheet";
 import { minZoom } from "./lib/crop";
-import { cropArea, formatOf } from "./lib/formats";
+import { CAPTION_FONT } from "./lib/caption";
+import { cropArea, formatOf, type Format } from "./lib/formats";
 import { captionFontReady } from "./lib/fonts";
 import { findIssues, worstIssue } from "./lib/issues";
 import { PAGE, layoutFor } from "./lib/layout";
@@ -28,6 +29,36 @@ const isTyping = () => {
   const el = document.activeElement;
   return el instanceof HTMLInputElement && el.type !== "range" && el.type !== "checkbox";
 };
+
+/** Three sample prints fanned out, drawn in the shape of the chosen size. */
+function StackArt({ format: f }: { format: Format }) {
+  const h = 104;
+  const w = (h * f.w) / f.h;
+  const win = f.window;
+  const photos = ["sunset", "sea", "forest"];
+  return (
+    <div className="stack-art" style={{ width: w * 2.1, height: h + 16 }} aria-hidden>
+      {photos.map((name, i) => (
+        <div key={name} className={`stack-card stack-${i}`} style={{ width: w, height: h }}>
+          <div
+            className={`stack-photo photo-${name}`}
+            style={{
+              left: `${(win.x / f.w) * 100}%`,
+              top: `${(win.y / f.h) * 100}%`,
+              width: `${(win.w / f.w) * 100}%`,
+              height: `${(win.h / f.h) * 100}%`,
+            }}
+          />
+          {f.kind === "instant" && i === 1 && (
+            <span className="stack-caption" style={{ fontFamily: `"${CAPTION_FONT}", cursive`, top: `${((win.y + win.h) / f.h) * 100}%` }}>
+              Sunday
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function App() {
   const history = useStore(docStore, docStore.get);
@@ -299,7 +330,7 @@ export function App() {
   const showingWhole = !!(selectedPrint && selPhoto && selectedPrint.crop.zoom <= minZoom(cropArea(f), selPhoto, selectedPrint.crop.rotation) + 1e-3);
 
   return (
-    <div className="app">
+    <div className={`app${drag ? " is-dragging" : ""}`}>
       <header className="bar">
         <div className="brand">
           <span className="brand-mark" aria-hidden>
@@ -352,10 +383,10 @@ export function App() {
               <figure className="sheet-wrap" key={i} style={{ width: sheetW }}>
                 <figcaption className="sheet-label">
                   <span>
-                    {sheetCount > 1 ? `Sheet ${i + 1}` : "Letter sheet"}
-                    {i === 0 && sideways && <span className="muted"> · some prints turned sideways to fit more</span>}
+                    <b>{sheetCount > 1 ? `Sheet ${i + 1}` : "Letter sheet"}</b>
+                    {i === 0 && sideways && <span className="muted"> · some turned sideways to fit more</span>}
                   </span>
-                  <span className="muted tabular">
+                  <span className={`count-pill tabular${used === per ? " is-full" : ""}`} title={`${used} of ${per} spots filled`}>
                     {used} of {per}
                   </span>
                 </figcaption>
@@ -376,11 +407,26 @@ export function App() {
                   />
                   {empty && i === 0 && (
                     <div className="empty-call">
+                      <StackArt format={f} />
                       <h1>Add photos to start</h1>
-                      <p className="muted">Drop them anywhere, or choose them from your Mac.</p>
+                      <p className="muted">
+                        Each becomes a true-size {f.name}
+                        {per > 1 ? `, ${per} to a Letter sheet` : ", one to a Letter sheet"}. Drop them anywhere.
+                      </p>
                       <button className="btn btn-primary btn-large" onClick={() => choose({ mode: "append" })}>
                         <ImagePlus size={18} /> Choose photos
                       </button>
+                      <ol className="steps" aria-label="How it works">
+                        <li>
+                          <span>1</span> Add photos
+                        </li>
+                        <li>
+                          <span>2</span> Frame{f.kind === "instant" ? " & caption" : " them"}
+                        </li>
+                        <li>
+                          <span>3</span> Print & cut
+                        </li>
+                      </ol>
                       <p className="privacy">
                         <ShieldCheck size={14} /> Photos stay on this computer
                       </p>
@@ -399,18 +445,21 @@ export function App() {
             <button onClick={() => openCloseUp(selectedPrint.id)} title="Frame and caption it up close (Return)">
               <Maximize2 size={16} /> Close up
             </button>
+            <span className="dock-sep" />
             <button onClick={() => actions.rotate(selectedPrint.id)} title="Turn the photo a quarter turn (R)">
               <RotateCw size={16} /> Turn
             </button>
             <button onClick={() => actions.toggleWhole(selectedPrint.id)} title={showingWhole ? "Fill the frame" : "Fit the whole photo in the frame"}>
               <Scan size={16} /> {showingWhole ? "Fill" : "Whole photo"}
             </button>
+            <span className="dock-sep" />
             <button onClick={() => setSelected(actions.duplicate(selectedPrint.id) ?? selectedPrint.id)} title="Print another copy (⌘D)">
               <Copy size={16} /> Copy
             </button>
             <button onClick={() => choose({ mode: "replace", id: selectedPrint.id })} title="Use a different photo, keeping the caption">
               <ImagePlus size={16} /> Replace
             </button>
+            <span className="dock-sep" />
             <button className="danger" onClick={() => remove(selectedPrint.id)} title="Remove (Delete)">
               <Trash2 size={16} /> Remove
             </button>

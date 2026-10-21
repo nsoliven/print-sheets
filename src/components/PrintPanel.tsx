@@ -86,11 +86,69 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
 
   const thumbW = count > 3 ? 64 : 84;
 
+  // The print dialog as a checklist to tick off while it's open. Ticks reset when the paper changes.
+  const [done, setDone] = useState<Set<string>>(new Set());
+  useEffect(() => setDone(new Set()), [paper]);
+  const steps: { id: string; label: string; key?: boolean; body: React.ReactNode }[] = [
+    { id: "load", label: "Load", body: p.load },
+    {
+      id: "printer",
+      label: "Printer",
+      body: (
+        <>
+          <b>{PRINTER_NAME}</b>, not the one without “Epson driver”
+        </>
+      ),
+    },
+    { id: "size", label: "Paper Size", body: <b>US Letter</b> },
+    {
+      id: "scale",
+      label: "Scale · most important",
+      key: true,
+      body: (
+        <>
+          <b>100%</b>. Never “Scale to Fit”, or every print comes out smaller.
+        </>
+      ),
+    },
+    {
+      id: "media",
+      label: "Print Settings",
+      body: (
+        <>
+          Media Type <b>{p.mediaType}</b>, Print Quality <b>{p.quality}</b>
+        </>
+      ),
+    },
+    {
+      id: "color",
+      label: "Color",
+      body: (
+        <>
+          Color Matching <b>EPSON Color Controls</b>, then Color Options Mode <b>EPSON Standard (sRGB)</b>
+        </>
+      ),
+    },
+    { id: "after", label: "After", body: p.after },
+  ];
+  const toggle = (id: string) =>
+    setDone((d) => {
+      const n = new Set(d);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+
   return (
     <div className="panel-scrim" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <aside className="panel" role="dialog" aria-modal="true" aria-label="Print">
         <header className="panel-head">
-          <h2>Print</h2>
+          <div>
+            <h2>Print</h2>
+            <p>
+              {doc.prints.length} {f.name} {doc.prints.length === 1 ? "print" : "prints"} on {count} {count === 1 ? "sheet" : "sheets"}
+            </p>
+          </div>
           <button className="icon-btn" aria-label="Close" onClick={onClose}>
             <X size={18} />
           </button>
@@ -102,8 +160,8 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
               <h3>Which sheet</h3>
               <div className="sheet-picks">
                 <button className={`sheet-pick sheet-pick-all${pick === "all" ? " is-on" : ""}`} onClick={() => setPick("all")}>
-                  <span className="sheet-pick-stack" style={{ width: thumbW, height: (thumbW * 11) / 8.5 }}>
-                    All
+                  <span className="pick-stack">
+                    <Sheet doc={doc} format={f} index={0} width={thumbW} />
                   </span>
                   <span>All {count}</span>
                 </button>
@@ -122,6 +180,7 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
             <div className="segmented" role="radiogroup" aria-label="Paper">
               {(Object.keys(PAPERS) as PaperId[]).map((id) => (
                 <button key={id} role="radio" aria-checked={paper === id} className={paper === id ? "is-on" : ""} onClick={() => choosePaper(id)}>
+                  <span className={`paper-swatch paper-${id}`} aria-hidden />
                   <span>{PAPERS[id].name}</span>
                   <span className="muted small">{PAPERS[id].detail}</span>
                 </button>
@@ -172,39 +231,38 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
           )}
 
           <section className={`settings${status.kind === "saved" ? " is-next" : ""}`}>
-            <h3>In the print dialog</h3>
-            <dl>
-              <dt>Load</dt>
-              <dd>{p.load}</dd>
-              <dt>Printer</dt>
-              <dd>
-                <b>{PRINTER_NAME}</b>, not the one without “Epson driver”
-              </dd>
-              <dt>Paper Size</dt>
-              <dd>
-                <b>US Letter</b>
-              </dd>
-              <dt>Scale</dt>
-              <dd>
-                <b>100%</b>. Never “Scale to Fit”, or every print comes out smaller.
-              </dd>
-              <dt>Print Settings</dt>
-              <dd>
-                Media Type <b>{p.mediaType}</b>, Print Quality <b>{p.quality}</b>
-              </dd>
-              <dt>Color</dt>
-              <dd>
-                Color Matching <b>EPSON Color Controls</b>, then Color Options Mode <b>EPSON Standard (sRGB)</b>
-              </dd>
-              <dt>After</dt>
-              <dd>{p.after}</dd>
-            </dl>
+            <div className="settings-head">
+              <h3>In the print dialog</h3>
+              <span>{done.size ? `${done.size} of ${steps.length} done` : "Tick them off as you go"}</span>
+            </div>
+            <ol className="checklist">
+              {steps.map((st) => (
+                <li key={st.id}>
+                  <button
+                    className={`check-row${done.has(st.id) ? " is-done" : ""}${st.key ? " is-key" : ""}`}
+                    aria-pressed={done.has(st.id)}
+                    onClick={() => toggle(st.id)}
+                  >
+                    <span className="tick">
+                      <Check size={12} strokeWidth={3} />
+                    </span>
+                    <span className="check-text">
+                      <span className="check-label">{st.label}</span>
+                      {st.body}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ol>
             <p className="check-size">
-              Each print should measure{" "}
-              <b>
-                {mmLabel(f.w)} × {mmLabel(f.h)} mm
-              </b>{" "}
-              ({inches(f.w)} × {inches(f.h)} in).
+              <Ruler size={18} />
+              <span>
+                Each print should measure{" "}
+                <b>
+                  {mmLabel(f.w)} × {mmLabel(f.h)} mm
+                </b>{" "}
+                ({inches(f.w)} × {inches(f.h)} in).
+              </span>
             </p>
           </section>
         </div>

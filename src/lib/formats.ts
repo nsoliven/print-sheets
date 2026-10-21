@@ -29,6 +29,11 @@ export interface Format {
   window: Rect;
   /** Size shown to people, in the unit they'd measure it with. */
   label: string;
+  /**
+   * Roughly how far a picture frame's lip covers each edge, for a size made to be framed. Shown as a
+   * guide in the close-up only; it never changes what prints.
+   */
+  lip?: number;
 }
 
 const instant = (
@@ -71,7 +76,7 @@ export const FORMATS: Format[] = [
   instant("polaroid-go", "Polaroid Go", "A tiny square Polaroid", 53.9, 66.6, 46, 47, 5, "54 × 67 mm"),
   photo("wallet", "Wallet", "Plain photo, fits a wallet", 63.5, 88.9, "2½ × 3½ in"),
   photo("photo-4x6", "4 × 6 photo", "Standard snapshot", 101.6, 152.4, "4 × 6 in"),
-  photo("photo-8x10", "8 × 10 photo", "One per sheet, for a picture frame", 203.2, 254, "8 × 10 in"),
+  { ...photo("photo-8x10", "8 × 10 photo", "One per sheet, for a picture frame", 203.2, 254, "8 × 10 in"), lip: 6.35 },
 ];
 
 export const FORMAT_BY_ID = Object.fromEntries(FORMATS.map((f) => [f.id, f])) as Record<FormatId, Format>;

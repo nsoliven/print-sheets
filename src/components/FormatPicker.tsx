@@ -58,6 +58,7 @@ export function FormatPicker({ value, onChange }: Props) {
   return (
     <div className="picker" ref={ref}>
       <button className="picker-button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <Silhouette f={current} scale={Math.min(0.19, 18 / current.h)} />
         <span className="picker-name">{current.name}</span>
         <span className="muted">{layoutFor(current).slots.length} per sheet</span>
         <ChevronDown size={15} className="muted" />

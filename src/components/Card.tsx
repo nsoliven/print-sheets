@@ -216,6 +216,20 @@ function CardView({
       onPointerLeave={() => setHover(false)}
       onDoubleClick={() => onOpen?.(print.id)}
     >
+      {/* The rest of the photo, faint, around the card in close-up. Drawn first so the card covers it. */}
+      {closeUp && photo && box && (
+        <image
+          className="ghost"
+          href={photo.url}
+          x={area.x + box.x}
+          y={area.y + box.y}
+          width={box.w}
+          height={box.h}
+          preserveAspectRatio="none"
+          transform={`rotate(${box.rotation} ${area.x + box.centerX} ${area.y + box.centerY})`}
+          opacity={active ? 0.42 : hover ? 0.26 : 0.14}
+        />
+      )}
       <rect
         className={onGrab ? "frame" : undefined}
         width={f.w}
@@ -235,19 +249,6 @@ function CardView({
           height={win.h + bleed.top + bleed.bottom}
         />
       </clipPath>
-      {closeUp && photo && box && (
-        <image
-          className="ghost"
-          href={photo.url}
-          x={area.x + box.x}
-          y={area.y + box.y}
-          width={box.w}
-          height={box.h}
-          preserveAspectRatio="none"
-          transform={`rotate(${box.rotation} ${area.x + box.centerX} ${area.y + box.centerY})`}
-          opacity={active ? 0.32 : hover ? 0.2 : 0}
-        />
-      )}
       <g clipPath={`url(#${clipId})`}>
         {(!photo || print.crop.zoom < 1) && (
           <rect
@@ -271,6 +272,16 @@ function CardView({
           />
         )}
       </g>
+      {closeUp && active && (
+        <g className="thirds" pointerEvents="none">
+          {[1, 2].map((k) => (
+            <g key={k}>
+              <line x1={win.x + (win.w * k) / 3} y1={win.y} x2={win.x + (win.w * k) / 3} y2={win.y + win.h} />
+              <line x1={win.x} y1={win.y + (win.h * k) / 3} x2={win.x + win.w} y2={win.y + (win.h * k) / 3} />
+            </g>
+          ))}
+        </g>
+      )}
       {strip && fit && (caption || showHint) && !hideCaption && (
         <text
           clipPath={`url(#${clipId}-card)`}
