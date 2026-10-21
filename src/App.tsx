@@ -1,13 +1,14 @@
-import { Copy, ImagePlus, Maximize2, Plus, Printer, Redo2, RotateCw, Scan, ShieldCheck, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Copy, ImagePlus, Maximize2, Plus, Printer, Redo2, RotateCw, Scan, ShieldCheck, Trash2, TriangleAlert, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CloseUp } from "./components/CloseUp";
 import { FormatPicker } from "./components/FormatPicker";
 import { MoreMenu } from "./components/MoreMenu";
 import { PrintPanel } from "./components/PrintPanel";
 import { Sheet } from "./components/Sheet";
 import { minZoom } from "./lib/crop";
-import { formatOf } from "./lib/formats";
+import { cropArea, formatOf } from "./lib/formats";
 import { captionFontReady } from "./lib/fonts";
+import { findIssues, worstIssue } from "./lib/issues";
 import { PAGE, layoutFor } from "./lib/layout";
 import { sheetsOf } from "./lib/pdf";
 import { loadSession, markSaved, saveSession } from "./lib/persist";
@@ -44,6 +45,8 @@ export function App() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [drag, setDrag] = useState<{ count: number; target: string | null } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [moving, setMoving] = useState<{ id: string; x: number; y: number; target: string | null } | null>(null);
+  const grabRef = useRef<{ id: string; x: number; y: number; started: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<Pick>({ mode: "append" });
   const stageRef = useRef<HTMLElement>(null);
@@ -235,6 +238,56 @@ export function App() {
     };
   }, [ingest]);
 
+  // Move a whole print: grab its white border (or hold Option) and drop it on another spot.
+  const onGrab = useCallback((id: string, e: React.PointerEvent) => {
+    e.preventDefault();
+    grabRef.current = { id, x: e.clientX, y: e.clientY, started: false };
+  }, []);
+  useEffect(() => {
+    const targetAt = (x: number, y: number, self: string) => {
+      const el = document.elementFromPoint(x, y)?.closest("[data-print-id], [data-slot-index]") as SVGElement | null;
+      if (!el) return null;
+      if (el.dataset.slotIndex) return `slot-${el.dataset.slotIndex}`;
+      return el.dataset.printId === self ? null : (el.dataset.printId ?? null);
+    };
+    const onMove = (e: PointerEvent) => {
+      const g = grabRef.current;
+      if (!g) return;
+      if (!g.started && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 5) return;
+      g.started = true;
+      setMoving({ id: g.id, x: e.clientX, y: e.clientY, target: targetAt(e.clientX, e.clientY, g.id) });
+    };
+    const onUp = (e: PointerEvent) => {
+      const g = grabRef.current;
+      grabRef.current = null;
+      if (!g?.started) return;
+      setMoving(null);
+      // The pointer-up would otherwise land as a click on whatever is under it.
+      const swallow = (ev: Event) => ev.stopPropagation();
+      window.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 0);
+      const target = targetAt(e.clientX, e.clientY, g.id);
+      if (!target) return;
+      const prints = docStore.get().doc.prints;
+      const to = target.startsWith("slot-") ? prints.length - 1 : prints.findIndex((p) => p.id === target);
+      if (to >= 0) {
+        actions.move(g.id, to);
+        setSelected(g.id);
+      }
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const worst = useMemo(() => (ready ? worstIssue(findIssues(doc)) : null), [doc, photosVersion, ready]);
+
   if (!ready) return <div className="app" />;
 
   const empty = doc.prints.length === 0;
@@ -243,7 +296,7 @@ export function App() {
   const LABEL = 30;
   const sheetW = Math.max(220, Math.min((stage.h - PAD * 2 - LABEL) * (PAGE.w / PAGE.h), stage.w - PAD * 2));
   const selPhoto = selectedPrint ? photoStore.get(selectedPrint.photoId) : undefined;
-  const showingWhole = !!(selectedPrint && selPhoto && selectedPrint.crop.zoom <= minZoom(f.window, selPhoto, selectedPrint.crop.rotation) + 1e-3);
+  const showingWhole = !!(selectedPrint && selPhoto && selectedPrint.crop.zoom <= minZoom(cropArea(f), selPhoto, selectedPrint.crop.rotation) + 1e-3);
 
   return (
     <div className="app">
@@ -256,6 +309,11 @@ export function App() {
         </div>
         <FormatPicker value={doc.format} onChange={(id) => actions.setFormat(id)} />
         <div className="bar-actions">
+          {worst && (
+            <button className="attention" onClick={() => openCloseUp(worst.id)} title={`${worst.text}. Show it up close.`}>
+              <TriangleAlert size={15} /> <span className="attention-text">{worst.text}</span>
+            </button>
+          )}
           <button className="icon-btn" aria-label="Undo" title="Undo (⌘Z)" disabled={!history.past.length} onClick={undo}>
             <Undo2 size={18} />
           </button>
@@ -309,11 +367,12 @@ export function App() {
                     width={sheetW}
                     interactive
                     selectedId={selected}
-                    dropId={drag?.target}
+                    dropId={moving ? moving.target : drag?.target}
                     photosVersion={photosVersion}
                     onSelect={setSelected}
                     onOpen={openCloseUp}
                     onAddAt={addAt}
+                    onGrab={onGrab}
                   />
                   {empty && i === 0 && (
                     <div className="empty-call">
@@ -337,22 +396,22 @@ export function App() {
       <footer className="foot">
         {selectedPrint && !closeUp ? (
           <div className="dock" role="toolbar" aria-label="Selected print">
-            <button onClick={() => openCloseUp(selectedPrint.id)}>
+            <button onClick={() => openCloseUp(selectedPrint.id)} title="Frame and caption it up close (Return)">
               <Maximize2 size={16} /> Close up
             </button>
-            <button onClick={() => actions.rotate(selectedPrint.id)}>
+            <button onClick={() => actions.rotate(selectedPrint.id)} title="Turn the photo a quarter turn (R)">
               <RotateCw size={16} /> Turn
             </button>
-            <button onClick={() => actions.toggleWhole(selectedPrint.id)}>
+            <button onClick={() => actions.toggleWhole(selectedPrint.id)} title={showingWhole ? "Fill the frame" : "Fit the whole photo in the frame"}>
               <Scan size={16} /> {showingWhole ? "Fill" : "Whole photo"}
             </button>
-            <button onClick={() => setSelected(actions.duplicate(selectedPrint.id) ?? selectedPrint.id)}>
+            <button onClick={() => setSelected(actions.duplicate(selectedPrint.id) ?? selectedPrint.id)} title="Print another copy (⌘D)">
               <Copy size={16} /> Copy
             </button>
-            <button onClick={() => choose({ mode: "replace", id: selectedPrint.id })}>
+            <button onClick={() => choose({ mode: "replace", id: selectedPrint.id })} title="Use a different photo, keeping the caption">
               <ImagePlus size={16} /> Replace
             </button>
-            <button className="danger" onClick={() => remove(selectedPrint.id)}>
+            <button className="danger" onClick={() => remove(selectedPrint.id)} title="Remove (Delete)">
               <Trash2 size={16} /> Remove
             </button>
           </div>
@@ -362,8 +421,8 @@ export function App() {
               {busy
                 ? "Opening photos…"
                 : f.kind === "instant"
-                  ? "Drag a photo to frame it, pinch to zoom. Click the white strip to write a caption."
-                  : "Drag a photo to frame it, pinch to zoom. Double-click for a close up."}
+                  ? "Drag a photo to frame it and pinch to zoom. Click the white strip to write. Drag the border to move a print."
+                  : "Drag a photo to frame it and pinch to zoom. Option-drag to move a print. Double-click for a close up."}
             </p>
           )
         )}
@@ -387,6 +446,16 @@ export function App() {
             openCloseUp(id);
           }}
         />
+      )}
+
+      {moving && (
+        <div className="move-ghost" style={{ left: moving.x, top: moving.y }} aria-hidden>
+          {(() => {
+            const p = doc.prints.find((x) => x.id === moving.id);
+            const ph = p && photoStore.get(p.photoId);
+            return ph ? <img src={ph.url} alt="" /> : null;
+          })()}
+        </div>
       )}
 
       {toast && (

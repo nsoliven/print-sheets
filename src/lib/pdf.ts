@@ -1,7 +1,7 @@
 import { PDFDocument, PrintScaling, rgb } from "pdf-lib";
 import { CAPTION_FONT, CAPTION_MAX, fitCaption, inkFor } from "./caption";
 import { photoBox, type Crop } from "./crop";
-import { captionStrip, formatOf, type Format, type Rect } from "./formats";
+import { captionStrip, cropArea, formatOf, type Format, type Rect } from "./formats";
 import { captionFontReady, measureCaption } from "./fonts";
 import { PAGE, layoutFor, slotMatrix, type Sides, type Slot } from "./layout";
 import { drawDownscaled, loadImage, releaseImage, type Photo } from "./photos";
@@ -72,7 +72,9 @@ async function renderWindow(photo: Photo, crop: Crop, f: Format, bleed: Sides, s
   ctx.scale(cw / ew, ch / eh);
   ctx.translate(bleed.left, bleed.top);
 
-  const box = photoBox(f.window, photo, crop);
+  const area = cropArea(f);
+  ctx.translate(area.x - f.window.x, area.y - f.window.y);
+  const box = photoBox(area, photo, crop);
   const img = await loadImage(photo.blob);
   try {
     const outW = Math.max(1, Math.round(box.w * k));

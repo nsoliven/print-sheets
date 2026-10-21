@@ -1,8 +1,9 @@
 import { ChevronLeft, ChevronRight, RotateCw, Scan, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { layoutFor } from "../lib/layout";
 import { CAPTION_FONT, CAPTION_MAX, fitCaption } from "../lib/caption";
 import { effectivePpi, MAX_ZOOM, minZoom, sharpness, zoomAt } from "../lib/crop";
-import { captionStrip, type Format } from "../lib/formats";
+import { captionStrip, cropArea, type Format } from "../lib/formats";
 import { measureCaption } from "../lib/fonts";
 import { photoStore } from "../lib/photos";
 import { actions, docStore } from "../lib/session";
@@ -48,6 +49,11 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
     return () => ro.disconnect();
   }, [vbW, vbH]);
 
+  const filmRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    filmRef.current?.querySelector(".film-item.is-current")?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  }, [id]);
+
   useEffect(() => {
     if (focus === "caption") setTimeout(() => inputRef.current?.focus(), 30);
   }, [focus, id]);
@@ -71,8 +77,9 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
   }, [doc.prints, index, id, onClose, onGo]);
 
   if (!print) return null;
+  const perSheet = layoutFor(f).slots.length;
 
-  const win = f.window;
+  const win = cropArea(f);
   const min = photo ? minZoom(win, photo, print.crop.rotation) : 1;
   const ppi = photo ? effectivePpi(win, photo, print.crop) : 999;
   const quality = sharpness(ppi);
@@ -101,7 +108,7 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
     <div className="closeup" role="dialog" aria-modal="true" aria-label="Close up">
       <div className="closeup-bar">
         <div className="closeup-nav">
-          <button className="icon-btn" aria-label="Previous print" disabled={index === 0} onClick={() => onGo(doc.prints[index - 1].id)}>
+          <button className="icon-btn" aria-label="Previous print" title="Previous (←)" disabled={index === 0} onClick={() => onGo(doc.prints[index - 1].id)}>
             <ChevronLeft size={18} />
           </button>
           <span className="muted tabular">
@@ -110,13 +117,14 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
           <button
             className="icon-btn"
             aria-label="Next print"
+            title="Next (→)"
             disabled={index >= doc.prints.length - 1}
             onClick={() => onGo(doc.prints[index + 1].id)}
           >
             <ChevronRight size={18} />
           </button>
         </div>
-        <button className="btn btn-primary" onClick={onClose}>
+        <button className="btn btn-primary" onClick={onClose} title="Back to the sheet (Esc)">
           Done
         </button>
       </div>
@@ -170,7 +178,7 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
 
       <div className="closeup-tools">
         <div className="zoom">
-          <button className="icon-btn" aria-label="Zoom out" onClick={() => nudgeZoom(1 / 1.15)}>
+          <button className="icon-btn" aria-label="Zoom out" title="Zoom out" onClick={() => nudgeZoom(1 / 1.15)}>
             <ZoomOut size={17} />
           </button>
           <input
@@ -184,12 +192,12 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
             onPointerUp={() => docStore.end("Zoomed photo")}
             onKeyUp={() => docStore.end("Zoomed photo")}
           />
-          <button className="icon-btn" aria-label="Zoom in" onClick={() => nudgeZoom(1.15)}>
+          <button className="icon-btn" aria-label="Zoom in" title="Zoom in" onClick={() => nudgeZoom(1.15)}>
             <ZoomIn size={17} />
           </button>
         </div>
         <div className="tool-row">
-          <button className="btn btn-quiet" onClick={() => actions.rotate(print.id)}>
+          <button className="btn btn-quiet" onClick={() => actions.rotate(print.id)} title="Turn a quarter turn (R)">
             <RotateCw size={16} /> Turn
           </button>
           <button className="btn btn-quiet" onClick={() => actions.toggleWhole(print.id)}>
@@ -206,6 +214,38 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
                 : "Drag to move the photo. Pinch or scroll to zoom."}
         </p>
       </div>
+
+      {doc.prints.length > 1 && (
+        <div className="film" ref={filmRef} role="listbox" aria-label="All prints">
+          {doc.prints.map((p, i) => {
+            const th = 46;
+            const sheetBreak = i > 0 && i % perSheet === 0;
+            return (
+              <button
+                key={p.id}
+                role="option"
+                aria-selected={p.id === id}
+                aria-label={`Print ${i + 1}${p.caption ? `: ${p.caption}` : ""}`}
+                className={`film-item${p.id === id ? " is-current" : ""}${sheetBreak ? " sheet-break" : ""}`}
+                onClick={() => onGo(p.id)}
+              >
+                <svg viewBox={`0 0 ${f.w} ${f.h}`} height={th} width={(th * f.w) / f.h}>
+                  <Card
+                    format={f}
+                    frame={doc.frame}
+                    matrix={[1, 0, 0, 1, 0, 0]}
+                    bleed={NO_BLEED}
+                    print={p}
+                    photo={photoStore.get(p.photoId)}
+                    cutLines={false}
+                    still
+                  />
+                </svg>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -106,6 +106,7 @@ for (const [name, file] of [
   ["Polaroid", "measure-polaroid.pdf"],
   ["Instax Wide", "measure-instax-wide.pdf"],
   ["Polaroid Go", "measure-polaroid-go.pdf"],
+  ["Wallet", "measure-wallet.pdf"],
 ]) {
   await chooseFormat(name);
   if (!(await page.$(".sheet .card"))) await addPhotos(synthetic);
@@ -162,6 +163,31 @@ const afterRedo = await page.$$eval(".sheet .card .caption", (t) => t.map((x) =>
 if (afterUndo.includes("first snow") || !afterRedo.includes("first snow")) problems.push("undo/redo did not round-trip a caption");
 else step("undo and redo work");
 
+// Move the first print to the third spot by dragging its white border.
+const order = () => page.$$eval(".sheet .card", (cs) => cs.map((c) => c.dataset.printId));
+const before0 = await order();
+const pointIn = (i, where) =>
+  page.$$eval(
+    ".sheet .card",
+    (cs, [i, where]) => {
+      const r = cs[i].querySelector(where === "border" ? ".frame" : ".hit-photo").getBoundingClientRect();
+      return where === "border" ? { x: r.x + r.width / 2, y: r.y + 4 } : { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    },
+    [i, where],
+  );
+const from = await pointIn(0, "border");
+const to = await pointIn(2, "photo");
+await page.mouse.move(from.x, from.y);
+await page.mouse.down();
+await page.mouse.move(to.x, to.y, { steps: 12 });
+await shot("04a-moving");
+await page.mouse.up();
+const after0 = await order();
+if (after0[2] !== before0[0] || after0[0] !== before0[1]) problems.push("dragging a print's border did not move it");
+else step("dragged a print to a new spot");
+await page.keyboard.press("Control+z");
+if ((await order())[0] !== before0[0]) problems.push("undo did not put the moved print back");
+
 await page.click(".sheet .card:nth-of-type(3) .hit-photo");
 await shot("04-selected");
 await page.keyboard.press("Escape");
@@ -172,6 +198,18 @@ if (photosDir && existsSync(join(photosDir, "small-200.jpg"))) {
   const badges = await page.$$(".badge");
   if (!badges.length) problems.push("a tiny photo got no blurry warning");
   else step("tiny photo is flagged as blurry");
+  if (!(await page.$(".attention"))) problems.push("no attention chip for a low-detail photo");
+  else {
+    await shot("04b-attention");
+    await page.click(".attention");
+    await page.waitForSelector(".closeup .film");
+    await shot("04c-closeup-film");
+    await page.click(".film-item:nth-child(2)");
+    const shown = await page.$eval(".closeup-nav .tabular", (e) => e.textContent);
+    if (!/^2 of/.test(shown.trim())) problems.push(`filmstrip did not jump to print 2 (showing ${shown})`);
+    else step("attention chip opens the print; filmstrip jumps between prints");
+    await page.click('.closeup button:has-text("Done")');
+  }
 }
 
 await page.click('button:has-text("Print")');

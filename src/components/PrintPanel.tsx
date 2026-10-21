@@ -1,10 +1,7 @@
-import { Check, Download, TriangleAlert, X } from "lucide-react";
+import { Check, Download, Ruler, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { fitCaption } from "../lib/caption";
-import { effectivePpi, sharpness } from "../lib/crop";
-import { captionStrip, type Format } from "../lib/formats";
-import { measureCaption } from "../lib/fonts";
-import { layoutFor } from "../lib/layout";
+import type { Format } from "../lib/formats";
+import { findIssues } from "../lib/issues";
 import { PAPERS, PRINTER_NAME, type PaperId } from "../lib/paper";
 import { buildPdf, pdfName, sheetsOf } from "../lib/pdf";
 import { prefs } from "../lib/persist";
@@ -24,7 +21,6 @@ type Status = { kind: "idle" } | { kind: "working"; done: number; total: number 
 
 export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
   const count = sheetsOf(doc);
-  const per = layoutFor(f).slots.length;
   const [paper, setPaper] = useState<PaperId>(() => prefs.get("paper", "glossy"));
   const [pick, setPick] = useState<"all" | number>("all");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -38,25 +34,10 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
   }, [onClose]);
 
   // Anything that would look bad on paper, found before spending a sheet of photo paper.
-  const issues = useMemo(() => {
-    const strip = captionStrip(f);
-    const chosen = new Set(sheets);
-    const blurry: string[] = [];
-    const soft: string[] = [];
-    const long: string[] = [];
-    doc.prints.forEach((pr, i) => {
-      if (!chosen.has(Math.floor(i / per))) return;
-      const ph = photoStore.get(pr.photoId);
-      if (ph) {
-        const q = sharpness(effectivePpi(f.window, ph, pr.crop));
-        if (q === "blurry") blurry.push(pr.id);
-        if (q === "soft") soft.push(pr.id);
-      }
-      if (strip && pr.caption.trim() && !fitCaption(pr.caption.trim(), strip, measureCaption).fits) long.push(pr.id);
-    });
-    return { blurry, soft, long };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doc, f, pick, per]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const issues = useMemo(() => findIssues(doc, sheets), [doc, pick, count]);
+  // Until a plain-paper test has been saved once, suggest one before using photo paper.
+  const [tested, setTested] = useState<boolean>(() => prefs.get("tested", false));
 
   const save = async () => {
     setStatus({ kind: "working", done: 0, total: 1 });
@@ -77,6 +58,10 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
       setStatus({ kind: "saved", name });
+      if (paper === "plain" && !tested) {
+        setTested(true);
+        prefs.set("tested", true);
+      }
       // Printing one sheet at a time is common with photo paper, so get the next one ready.
       if (pick !== "all" && pick + 1 < count) setPick(pick + 1);
     } catch (e) {
@@ -142,6 +127,17 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
                 </button>
               ))}
             </div>
+            {!tested && paper === "glossy" && (
+              <p className="tip">
+                <Ruler size={15} />
+                <span>
+                  First time? Print once on plain paper and measure a card before using photo paper.{" "}
+                  <button className="link" onClick={() => choosePaper("plain")}>
+                    Use plain paper
+                  </button>
+                </span>
+              </p>
+            )}
           </section>
 
           {(issues.blurry.length > 0 || issues.soft.length > 0 || issues.long.length > 0) && (
@@ -152,9 +148,12 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
             </section>
           )}
 
-          <button className="btn btn-primary btn-wide" onClick={save} disabled={status.kind === "working"}>
+          <button className="btn btn-primary btn-wide save" onClick={save} disabled={status.kind === "working"}>
+            {status.kind === "working" && (
+              <span className="save-progress" style={{ transform: `scaleX(${status.total ? status.done / status.total : 0})` }} />
+            )}
             {status.kind === "working" ? (
-              <>Preparing {status.total > 1 ? `${status.done} of ${status.total}` : "…"}</>
+              <span className="save-label">Preparing {status.total > 1 ? `print ${status.done} of ${status.total}` : "…"}</span>
             ) : (
               <>
                 <Download size={17} /> Save PDF{sheets.length > 1 ? ` (${sheets.length} sheets)` : count > 1 ? ` (sheet ${sheets[0] + 1})` : ""}

@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { CAPTION_FONT, CAPTION_MAX, fitCaption, inkFor } from "../lib/caption";
 import { effectivePpi, panBy, photoBox, sharpness, zoomAt, type Crop } from "../lib/crop";
-import { captionStrip, type Format } from "../lib/formats";
+import { captionStrip, cropArea, type Format } from "../lib/formats";
 import { measureCaption } from "../lib/fonts";
 import type { Sides } from "../lib/layout";
 import { FRAME_COLORS } from "../lib/pdf";
@@ -23,10 +23,14 @@ interface Props {
   dropTarget?: boolean;
   /** Close-up view: plain scrolling pans the photo and the hidden part of the photo shows around the card. */
   closeUp?: boolean;
+  /** A small picture of the print with no interaction, e.g. in the filmstrip. */
+  still?: boolean;
   /** Hide the drawn caption, e.g. while it is being typed over. */
   hideCaption?: boolean;
   onSelect?: (id: string) => void;
   onOpen?: (id: string, focus?: "caption") => void;
+  /** Start moving the whole print (grabbed by its border, or with Option held). */
+  onGrab?: (id: string, e: React.PointerEvent) => void;
 }
 
 const currentCrop = (id: string): Crop | undefined => docStore.get().doc.prints.find((p) => p.id === id)?.crop;
@@ -42,26 +46,29 @@ function CardView({
   selected,
   dropTarget,
   closeUp,
+  still,
   hideCaption,
   onSelect,
   onOpen,
+  onGrab,
 }: Props) {
   const groupRef = useRef<SVGGElement>(null);
   const hitRef = useRef<SVGRectElement>(null);
   const [active, setActive] = useState(false);
   const [hover, setHover] = useState(false);
   const win = f.window;
+  const area = cropArea(f);
   const strip = captionStrip(f);
   const fill = f.kind === "instant" ? FRAME_COLORS[frame] : "#ffffff";
-  const box = photo ? photoBox(win, photo, print.crop) : null;
-  const clipId = `clip-${print.id}${closeUp ? "-cu" : ""}`;
-  const quality = photo ? sharpness(effectivePpi(win, photo, print.crop)) : "sharp";
+  const box = photo ? photoBox(area, photo, print.crop) : null;
+  const clipId = `clip-${print.id}${closeUp ? "-cu" : still ? "-th" : ""}`;
+  const quality = photo ? sharpness(effectivePpi(area, photo, print.crop)) : "sharp";
 
   // Screen <-> card coordinates, read fresh each time because the sheet can scroll or resize.
   const toLocal = (x: number, y: number) => {
     const m = groupRef.current!.getScreenCTM()!.inverse();
     const p = new DOMPoint(x, y).matrixTransform(m);
-    return { x: p.x - win.x, y: p.y - win.y };
+    return { x: p.x - area.x, y: p.y - area.y };
   };
   const vecToLocal = (dx: number, dy: number) => {
     const m = groupRef.current!.getScreenCTM()!.inverse();
@@ -71,7 +78,7 @@ function CardView({
   // Trackpad pinch (Chrome sends ctrl+wheel, Safari sends gesture events) and, in close-up, two-finger scroll.
   useEffect(() => {
     const el = hitRef.current;
-    if (!el || !photo) return;
+    if (!el || !photo || still) return;
     let idle: ReturnType<typeof setTimeout> | undefined;
     const settle = (label: string) => {
       clearTimeout(idle);
@@ -89,11 +96,11 @@ function CardView({
       setActive(true);
       if (e.ctrlKey) {
         const p = toLocal(e.clientX, e.clientY);
-        actions.setCrop(print.id, zoomAt(crop, win, photo, Math.exp(-e.deltaY * 0.01), p.x, p.y));
+        actions.setCrop(print.id, zoomAt(crop, area, photo, Math.exp(-e.deltaY * 0.01), p.x, p.y));
         settle("Zoomed photo");
       } else {
         const d = vecToLocal(-e.deltaX, -e.deltaY);
-        actions.setCrop(print.id, panBy(crop, win, photo, d.x, d.y));
+        actions.setCrop(print.id, panBy(crop, area, photo, d.x, d.y));
         settle("Moved photo");
       }
     };
@@ -111,7 +118,7 @@ function CardView({
       e.preventDefault();
       if (!gesture) return;
       const scale = (e as unknown as { scale: number }).scale;
-      actions.setCrop(print.id, zoomAt(gesture.crop, win, photo, scale, gesture.x, gesture.y));
+      actions.setCrop(print.id, zoomAt(gesture.crop, area, photo, scale, gesture.x, gesture.y));
     };
     const onGestureEnd = (e: Event) => {
       e.preventDefault();
@@ -131,7 +138,7 @@ function CardView({
       el.removeEventListener("gestureend", onGestureEnd);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [print.id, photo, win, closeUp]);
+  }, [print.id, photo, area, closeUp, still]);
 
   // Dragging pans; two fingers pinch. A press that barely moves is a click.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -153,7 +160,9 @@ function CardView({
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0 || !photo) return;
+    if (e.button !== 0) return;
+    if (e.altKey && onGrab) return onGrab(print.id, e);
+    if (!photo) return;
     e.preventDefault();
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -168,7 +177,7 @@ function CardView({
     if (d.pinch) {
       const [a, b] = [...pointers.current.values()];
       const factor = Math.hypot(a.x - b.x, a.y - b.y) / d.pinch.dist;
-      actions.setCrop(print.id, zoomAt(d.crop, win, photo, factor, d.pinch.mx, d.pinch.my));
+      actions.setCrop(print.id, zoomAt(d.crop, area, photo, factor, d.pinch.mx, d.pinch.my));
       return;
     }
     const dx = e.clientX - d.x;
@@ -180,7 +189,7 @@ function CardView({
       onSelect?.(print.id);
     }
     const v = vecToLocal(dx, dy);
-    actions.setCrop(print.id, panBy(d.crop, win, photo, v.x, v.y));
+    actions.setCrop(print.id, panBy(d.crop, area, photo, v.x, v.y));
   };
   const onPointerUp = (e: React.PointerEvent) => {
     if (!pointers.current.delete(e.pointerId)) return;
@@ -207,7 +216,14 @@ function CardView({
       onPointerLeave={() => setHover(false)}
       onDoubleClick={() => onOpen?.(print.id)}
     >
-      <rect width={f.w} height={f.h} fill={fill} onClick={() => onSelect?.(print.id)} />
+      <rect
+        className={onGrab ? "frame" : undefined}
+        width={f.w}
+        height={f.h}
+        fill={fill}
+        onPointerDown={onGrab ? (e) => e.button === 0 && onGrab(print.id, e) : undefined}
+        onClick={() => onSelect?.(print.id)}
+      />
       <clipPath id={`${clipId}-card`}>
         <rect width={f.w} height={f.h} />
       </clipPath>
@@ -223,12 +239,12 @@ function CardView({
         <image
           className="ghost"
           href={photo.url}
-          x={win.x + box.x}
-          y={win.y + box.y}
+          x={area.x + box.x}
+          y={area.y + box.y}
           width={box.w}
           height={box.h}
           preserveAspectRatio="none"
-          transform={`rotate(${box.rotation} ${win.x + box.centerX} ${win.y + box.centerY})`}
+          transform={`rotate(${box.rotation} ${area.x + box.centerX} ${area.y + box.centerY})`}
           opacity={active ? 0.32 : hover ? 0.2 : 0}
         />
       )}
@@ -246,12 +262,12 @@ function CardView({
         {photo && box && (
           <image
             href={photo.url}
-            x={win.x + box.x}
-            y={win.y + box.y}
+            x={area.x + box.x}
+            y={area.y + box.y}
             width={box.w}
             height={box.h}
             preserveAspectRatio="none"
-            transform={`rotate(${box.rotation} ${win.x + box.centerX} ${win.y + box.centerY})`}
+            transform={`rotate(${box.rotation} ${area.x + box.centerX} ${area.y + box.centerY})`}
           />
         )}
       </g>
@@ -269,7 +285,7 @@ function CardView({
           {caption || "Write a caption"}
         </text>
       )}
-      {strip && onOpen && (
+      {strip && onOpen && !still && (
         <rect
           className="hit-strip"
           x={0}
@@ -277,6 +293,7 @@ function CardView({
           width={f.w}
           height={strip.h}
           fill="transparent"
+          onPointerDown={onGrab ? (e) => e.button === 0 && onGrab(print.id, e) : undefined}
           onClick={(e) => {
             e.stopPropagation();
             onSelect?.(print.id);
@@ -284,6 +301,7 @@ function CardView({
           }}
         />
       )}
+      {!still && (
       <rect
         ref={hitRef}
         className="hit-photo"
@@ -297,6 +315,7 @@ function CardView({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       />
+      )}
       {cutLines && (
         <rect
           className="cut"
@@ -307,7 +326,7 @@ function CardView({
           strokeWidth={0.12}
         />
       )}
-      {quality !== "sharp" && !active && (
+      {quality !== "sharp" && !active && !still && (
         <g className={`badge badge-${quality}`} transform={`translate(${win.x + win.w - 3.2} ${win.y + 3.2})`}>
           <title>{quality === "blurry" ? "This photo will look blurry at this size" : "This photo may look a little soft"}</title>
           <circle r={closeUp ? 1.6 : 2.4} />

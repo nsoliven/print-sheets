@@ -1,13 +1,13 @@
 // The one open document and the edits people can make to it.
 import { clampCrop, DEFAULT_CROP, rotateCrop, toggleWhole, type Crop } from "./crop";
-import { formatOf, type FormatId } from "./formats";
+import { cropArea, formatOf, type FormatId } from "./formats";
 import { newId } from "./id";
 import { importPhoto, looksLikeImage, photoStore, type Photo } from "./photos";
 import { createDocStore, EMPTY_DOC, updatePrint, type Doc, type Frame, type PrintItem } from "./store";
 
 export const docStore = createDocStore(EMPTY_DOC);
 
-const win = (doc: Doc) => formatOf(doc.format).window;
+const win = (doc: Doc) => cropArea(formatOf(doc.format));
 
 function freshCrop(doc: Doc, p: Photo): Crop {
   return clampCrop(DEFAULT_CROP, win(doc), p);
@@ -124,7 +124,7 @@ export const actions = {
   setFormat(format: FormatId) {
     docStore.commit("Changed size", (d) => {
       if (d.format === format) return d;
-      const w = formatOf(format).window;
+      const w = cropArea(formatOf(format));
       // Keep each photo's framing, adjusted to the new window shape.
       const prints = d.prints.map((p) => {
         const ph = photoStore.get(p.photoId);

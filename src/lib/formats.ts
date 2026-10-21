@@ -87,3 +87,12 @@ export function captionStrip(f: Format): Rect | null {
 
 /** Full-bleed photos run a little past the cut line so a slightly-off cut still lands on the photo. */
 export const BLEED = 1;
+
+/**
+ * The area a photo is framed against, in the card's frame. For full-bleed prints this includes the
+ * bleed, so the photo always reaches past the cut line instead of stopping exactly on it.
+ */
+export function cropArea(f: Format): Rect {
+  if (f.kind === "instant") return f.window;
+  return { x: f.window.x - BLEED, y: f.window.y - BLEED, w: f.window.w + 2 * BLEED, h: f.window.h + 2 * BLEED };
+}

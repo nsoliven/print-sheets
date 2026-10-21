@@ -66,3 +66,19 @@ describe("crop", () => {
     expect(effectivePpi(win, img, c)).toBeCloseTo(3024 / (62 / 25.4), 6);
   });
 });
+
+describe("full-bleed framing", () => {
+  it("frames borderless photos against the bleed, so they reach past every cut line", async () => {
+    const { cropArea, formatOf, BLEED } = await import("../src/lib/formats");
+    const f = formatOf("wallet");
+    const area = cropArea(f);
+    for (const photo of [{ w: 4032, h: 3024 }, { w: 3024, h: 4032 }]) {
+      const b = photoBox(area, photo, clampCrop(DEFAULT_CROP, area, photo));
+      // Photo box is in crop-area coordinates; convert to the card's frame.
+      expect(area.x + b.x).toBeLessThanOrEqual(-BLEED + 1e-9);
+      expect(area.y + b.y).toBeLessThanOrEqual(-BLEED + 1e-9);
+      expect(area.x + b.x + b.w).toBeGreaterThanOrEqual(f.w + BLEED - 1e-9);
+      expect(area.y + b.y + b.h).toBeGreaterThanOrEqual(f.h + BLEED - 1e-9);
+    }
+  });
+});

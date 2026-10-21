@@ -18,9 +18,10 @@ interface Props {
   onSelect?: (id: string) => void;
   onOpen?: (id: string, focus?: "caption") => void;
   onAddAt?: (index: number) => void;
+  onGrab?: (id: string, e: React.PointerEvent) => void;
 }
 
-function SheetView({ doc, format, index, width, interactive, selectedId, dropId, onSelect, onOpen, onAddAt }: Props) {
+function SheetView({ doc, format, index, width, interactive, selectedId, dropId, onSelect, onOpen, onAddAt, onGrab }: Props) {
   const { slots } = layoutFor(format);
   const start = index * slots.length;
   const prints = doc.prints.slice(start, start + slots.length);
@@ -53,6 +54,7 @@ function SheetView({ doc, format, index, width, interactive, selectedId, dropId,
               dropTarget={dropId === p.id}
               onSelect={interactive ? onSelect : undefined}
               onOpen={interactive ? onOpen : undefined}
+              onGrab={interactive ? onGrab : undefined}
             />
           );
         }
@@ -63,7 +65,8 @@ function SheetView({ doc, format, index, width, interactive, selectedId, dropId,
         return (
           <g
             key={`empty-${i}`}
-            className={`empty${next ? " is-next" : ""}`}
+            className={`empty${next ? " is-next" : ""}${dropId === `slot-${start + i}` ? " is-drop" : ""}`}
+            data-slot-index={start + i}
             transform={`matrix(${m.join(" ")})`}
             onClick={() => onAddAt?.(start + firstEmpty)}
           >
