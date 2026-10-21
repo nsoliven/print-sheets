@@ -6,7 +6,7 @@ Built for an Epson EcoTank ET-2850 on a Mac with Canon GP-701 glossy photo paper
 
 ## Use it
 
-Download **Print Sheets.html** from the [latest release](https://github.com/nsoliven/print-sheets/releases/latest) and double-click it. It opens in your browser and works offline. Safari is best on a Mac because it can open iPhone HEIC photos; Chrome works too.
+Download **Print-Sheets.html** from the [latest release](https://github.com/nsoliven/print-sheets/releases/latest) and double-click it. It opens in your browser and works offline. Safari is best on a Mac because it can open iPhone HEIC photos; Chrome works too.
 
 1. **Add photos.** Drop them anywhere on the window, or press Add photos.
 2. **Frame them.** Drag a photo to move it, pinch or ⌘-scroll to zoom. Double-click for a close-up with a zoom slider, and the hidden part of the photo shown around the card while you frame it.
