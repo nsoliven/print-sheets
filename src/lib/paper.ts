@@ -25,7 +25,7 @@ export const PAPERS: Record<PaperId, Paper> = {
   plain: {
     id: "plain",
     name: "Plain paper",
-    detail: "Hammermill · for a test print first",
+    detail: "Hammermill",
     mediaType: "Plain Paper / Bright White Paper",
     quality: "Normal",
     load: "Plain paper in the back feeder. When the printer asks, choose Letter and Plain Paper.",

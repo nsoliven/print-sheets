@@ -103,7 +103,7 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
     { id: "size", label: "Paper Size", body: <b>US Letter</b> },
     {
       id: "scale",
-      label: "Scale · most important",
+      label: "Scale",
       key: true,
       body: (
         <>
@@ -143,12 +143,7 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
     <div className="panel-scrim" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <aside className="panel" role="dialog" aria-modal="true" aria-label="Print">
         <header className="panel-head">
-          <div>
-            <h2>Print</h2>
-            <p>
-              {doc.prints.length} {f.name} {doc.prints.length === 1 ? "print" : "prints"} on {count} {count === 1 ? "sheet" : "sheets"}
-            </p>
-          </div>
+          <h2>Print</h2>
           <button className="icon-btn" aria-label="Close" onClick={onClose}>
             <X size={18} />
           </button>
@@ -233,7 +228,11 @@ export function PrintPanel({ doc, format: f, onClose, onShow }: Props) {
           <section className={`settings${status.kind === "saved" ? " is-next" : ""}`}>
             <div className="settings-head">
               <h3>In the print dialog</h3>
-              <span>{done.size ? `${done.size} of ${steps.length} done` : "Tick them off as you go"}</span>
+              {done.size > 0 && (
+                <span>
+                  {done.size} of {steps.length}
+                </span>
+              )}
             </div>
             <ol className="checklist">
               {steps.map((st) => (

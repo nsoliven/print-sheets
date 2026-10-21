@@ -234,7 +234,6 @@ h1, h2, h3, p, ol { margin: 0; }
   display: flex; flex-direction: column; align-items: center; gap: 8px; animation: rise 0.5s var(--ease) both;
 }
 .empty-call h1 { font-size: 20px; font-weight: 680; letter-spacing: -0.02em; margin-top: 6px; }
-.empty-call .muted { color: #6f6b64; max-width: 290px; }
 .empty-call .btn { margin-top: 12px; background: #1d1c1a; color: #fff; }
 @keyframes rise { from { opacity: 0; transform: translate(-50%, calc(-50% + 10px)); } }
 .stack-art { position: relative; margin: 2px auto 6px; }
@@ -253,18 +252,12 @@ h1, h2, h3, p, ol { margin: 0; }
 .photo-sunset { background: radial-gradient(circle at 62% 58%, #ffe2a8 0 8%, transparent 9%), linear-gradient(172deg, #f8cf8c 0%, #ee8a5b 52%, #9a5b86 100%); }
 .photo-sea { background: linear-gradient(180deg, #bfe0ef 0%, #7db8d8 50%, #3b7ea6 51%, #1f557a 100%); }
 .photo-forest { background: radial-gradient(ellipse 80% 40% at 50% 100%, #2f5a3a, transparent), linear-gradient(176deg, #dfeadb 0%, #93bd8c 45%, #4b7a52 100%); }
-.steps { list-style: none; display: flex; gap: 16px; white-space: nowrap; padding: 0; margin-top: 14px; font-size: 12.5px; color: #6f6b64; }
-.steps li { display: flex; align-items: center; gap: 6px; }
-.steps span {
-  width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
-  background: #f1efea; color: #1d1c1a; font-size: 10.5px; font-weight: 700;
-}
 .privacy { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #7a766f; margin-top: 10px; padding-top: 12px; border-top: 1px solid #eeebe6; width: 100%; justify-content: center; }
 
 /* Footer: hint or the selected-print toolbar */
 .foot { display: flex; align-items: center; justify-content: center; padding: 0 16px 16px; }
 .hint { color: var(--muted); font-size: 13px; text-align: center; }
-.hint kbd, .closeup-note kbd {
+.closeup-note kbd {
   font: inherit; font-size: 11.5px; font-weight: 600; padding: 1px 6px; border-radius: 5px;
   background: var(--surface); box-shadow: 0 0 0 0.5px var(--line), 0 1px 0 var(--line); color: var(--ink-2);
 }
@@ -295,8 +288,6 @@ h1, h2, h3, p, ol { margin: 0; }
 @keyframes fade { from { opacity: 0; } }
 .closeup-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 14px; }
 .closeup-nav { display: flex; align-items: center; gap: 4px; font-size: 13px; }
-.closeup-title { font-size: 13px; color: var(--muted); text-align: center; }
-.closeup-title b { color: var(--ink); font-weight: 600; }
 .closeup-bar .btn-primary { justify-self: end; box-shadow: none; }
 .closeup-stage { display: grid; place-items: center; min-height: 0; padding: 0 24px; overflow: hidden; }
 .closeup-card { position: relative; animation: grow 0.32s var(--ease); }

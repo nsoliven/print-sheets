@@ -86,7 +86,6 @@ export function FormatPicker({ value, onChange }: Props) {
                     <span className="picker-title">
                       {f.name} <span className="muted picker-size">{f.label}</span>
                     </span>
-                    <span className="muted">{f.blurb}</span>
                   </span>
                   <span className="picker-count">
                     {layoutFor(f).slots.length}
