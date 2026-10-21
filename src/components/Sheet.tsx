@@ -59,9 +59,12 @@ function SheetView({ doc, format, index, width, interactive, selectedId, dropId,
           );
         }
         if (!interactive) return null;
-        // Empty spots are only drawn on screen, never printed.
+        // Empty spots are only drawn on screen, never printed. Each is a faint outline of the card itself,
+        // window and caption strip included, so you can see what the sheet will hold.
         const m = slotMatrix(slot);
         const next = i === firstEmpty;
+        const w = format.window;
+        const r = Math.min(format.w, format.h) * 0.075;
         return (
           <g
             key={`empty-${i}`}
@@ -70,9 +73,12 @@ function SheetView({ doc, format, index, width, interactive, selectedId, dropId,
             transform={`matrix(${m.join(" ")})`}
             onClick={() => onAddAt?.(start + firstEmpty)}
           >
-            <rect x={1.2} y={1.2} width={format.w - 2.4} height={format.h - 2.4} rx={1.2} vectorEffect="non-scaling-stroke" />
-            <g transform={`translate(${format.w / 2} ${format.h / 2})`} className="empty-plus">
-              <path d="M-3 0H3M0 -3V3" vectorEffect="non-scaling-stroke" />
+            <title>{next ? "Add photos" : "Add photos to fill this spot"}</title>
+            <rect className="empty-card" x={0.6} y={0.6} width={format.w - 1.2} height={format.h - 1.2} rx={0.8} />
+            {format.kind === "instant" && <rect className="empty-window" x={w.x} y={w.y} width={w.w} height={w.h} rx={0.4} />}
+            <g transform={`translate(${w.x + w.w / 2} ${w.y + w.h / 2})`} className="empty-plus">
+              <circle r={r} />
+              <path d={`M${-r * 0.42} 0H${r * 0.42}M0 ${-r * 0.42}V${r * 0.42}`} />
             </g>
           </g>
         );

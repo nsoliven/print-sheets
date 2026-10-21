@@ -40,3 +40,15 @@ After the first working version, the app was compared against two other apps by 
 - Every control has a tooltip, with its shortcut where it has one.
 - A first-run nudge to test on plain paper, in the spirit of Camera Toolkit's guided setup.
 - Saving shows a progress bar; the app has a favicon.
+
+## Design pass
+
+On 2026-10-21 the interface was reviewed screen by screen against contrast, hierarchy, alignment, proximity, consistency, balance, white space and unity, with ideas taken from tools that do this well: photo editors frame on a dark backdrop, framing services show the frame before you commit, and print modules make the page feel like paper. What changed:
+
+- **Close-up is a dark room.** The print is the brightest thing on screen. The rest of the photo shows faintly around the card while you frame, and always behind it, so the white border looks like paper. A rule-of-thirds grid appears while you drag. Zoom, Turn and Fill sit in one toolbar.
+- **8 × 10 shows the frame.** A shaded edge and dashed line mark about where an 8 × 10 frame's lip covers the print (¼ in, the usual overlap). It is a guide on screen only.
+- **Empty spots are outlines of the card**, window included, instead of dashed boxes. The next spot shows a plus.
+- **First run tells the story**: a fan of sample prints in the chosen size, one sentence on what you'll get, the button, and three steps.
+- **The print dialog is a checklist** to tick off while it's open, with Scale marked as the setting that matters most. Paper choices have a small swatch; "All sheets" is drawn as a stack.
+- **One system.** One accent (blue) for selection and focus, warm neutrals everywhere else, the switch in ink rather than green. Paper sits on the desk with a contact shadow and a long soft one, under a faint pool of light.
+- Motion is short and settles: sheets and new prints fade in, the sample prints fan out, the toolbar springs up. Reduced motion turns it all off.

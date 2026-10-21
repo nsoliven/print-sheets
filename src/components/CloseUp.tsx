@@ -124,6 +124,9 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
             <ChevronRight size={18} />
           </button>
         </div>
+        <p className="closeup-title">
+          <b>{print.caption.trim() || `Print ${index + 1}`}</b> · {f.name}, sheet {Math.floor(index / perSheet) + 1}
+        </p>
         <button className="btn btn-primary" onClick={onClose} title="Back to the sheet (Esc)">
           Done
         </button>
@@ -134,7 +137,7 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
           <svg viewBox={`${-pad} ${-pad} ${vbW} ${vbH}`} width={w} height={h} className="closeup-svg">
             <defs>
               <filter id="lift" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="0.6" stdDeviation="1.2" floodOpacity="0.16" />
+                <feDropShadow dx="0" dy="1.2" stdDeviation="2.4" floodOpacity="0.55" />
               </filter>
             </defs>
             <rect width={f.w} height={f.h} fill="#fff" filter="url(#lift)" />
@@ -150,6 +153,16 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
               hideCaption={editing && !caption}
               onOpen={() => inputRef.current?.focus()}
             />
+            {f.kind === "photo" && <rect className="card-edge" width={f.w} height={f.h} />}
+            {f.lip && (
+              <g className="frame-lip" pointerEvents="none">
+                <path
+                  fillRule="evenodd"
+                  d={`M0 0H${f.w}V${f.h}H0Z M${f.lip} ${f.lip}V${f.h - f.lip}H${f.w - f.lip}V${f.lip}Z`}
+                />
+                <rect x={f.lip} y={f.lip} width={f.w - 2 * f.lip} height={f.h - 2 * f.lip} />
+              </g>
+            )}
           </svg>
           {strip && fit && (
             <input
@@ -177,30 +190,32 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
       </div>
 
       <div className="closeup-tools">
-        <div className="zoom">
-          <button className="icon-btn" aria-label="Zoom out" title="Zoom out" onClick={() => nudgeZoom(1 / 1.15)}>
-            <ZoomOut size={17} />
-          </button>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.001}
-            aria-label="Zoom"
-            value={toSlider(print.crop.zoom)}
-            onChange={(e) => setZoom(fromSlider(+e.target.value))}
-            onPointerUp={() => docStore.end("Zoomed photo")}
-            onKeyUp={() => docStore.end("Zoomed photo")}
-          />
-          <button className="icon-btn" aria-label="Zoom in" title="Zoom in" onClick={() => nudgeZoom(1.15)}>
-            <ZoomIn size={17} />
-          </button>
-        </div>
-        <div className="tool-row">
+        <div className="tool-pill" role="toolbar" aria-label="Framing">
+          <div className="zoom">
+            <button className="icon-btn" aria-label="Zoom out" title="Zoom out" onClick={() => nudgeZoom(1 / 1.15)}>
+              <ZoomOut size={17} />
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.001}
+              aria-label="Zoom"
+              value={toSlider(print.crop.zoom)}
+              style={{ "--p": Math.max(0, Math.min(1, toSlider(print.crop.zoom))) } as React.CSSProperties}
+              onChange={(e) => setZoom(fromSlider(+e.target.value))}
+              onPointerUp={() => docStore.end("Zoomed photo")}
+              onKeyUp={() => docStore.end("Zoomed photo")}
+            />
+            <button className="icon-btn" aria-label="Zoom in" title="Zoom in" onClick={() => nudgeZoom(1.15)}>
+              <ZoomIn size={17} />
+            </button>
+          </div>
+          <span className="tool-sep" />
           <button className="btn btn-quiet" onClick={() => actions.rotate(print.id)} title="Turn a quarter turn (R)">
             <RotateCw size={16} /> Turn
           </button>
-          <button className="btn btn-quiet" onClick={() => actions.toggleWhole(print.id)}>
+          <button className="btn btn-quiet" onClick={() => actions.toggleWhole(print.id)} title={whole ? "Fill the frame" : "Fit the whole photo in the frame"}>
             <Scan size={16} /> {whole ? "Fill the frame" : "Show whole photo"}
           </button>
         </div>
@@ -211,7 +226,13 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
               ? "This photo may look a little soft at this zoom. Zooming out makes it sharper."
               : tooLong
                 ? "This caption is too long to fit. Try a shorter one."
-                : "Drag to move the photo. Pinch or scroll to zoom."}
+                : f.lip
+                  ? "The shaded edge is about where an 8 × 10 frame covers the print. Keep faces inside the dashed line."
+                  : (
+                      <>
+                        Drag to move the photo, pinch or scroll to zoom, <kbd>R</kbd> to turn.
+                      </>
+                    )}
         </p>
       </div>
 
