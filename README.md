@@ -1,8 +1,17 @@
 # Print Sheets
 
-Print your photos as instant-film-style prints at home. Pick a size, drop in photos, frame each one by dragging and pinching, write a caption on the white strip, and save a PDF that prints every card at its true size on US Letter paper.
+Print your photos as instant-film-style prints, or plain photo prints up to 8 × 10, at home. Pick a size, drop in photos, frame each one by dragging and pinching, write a caption on the white strip, and save a PDF that prints every card at its true size on US Letter paper.
 
-Built for an Epson EcoTank ET-2850 on a Mac with Canon GP-701 glossy photo paper, with Hammermill plain paper for test prints.
+Tested with:
+
+| | |
+|---|---|
+| Printer | Epson EcoTank ET-2850, Epson's own macOS driver |
+| Photo paper | Canon GP-701 glossy, 8.5 × 11 in |
+| Plain paper | Hammermill Premium Color 28 lb, for test prints |
+| Frames | BESCRCL 8 × 10 black picture frames (no mat) |
+
+Any printer that prints US Letter at 100% scale should work; the printing guide uses the Epson driver's wording.
 
 ## Use it
 
@@ -26,6 +35,7 @@ Everything is undoable (⌘Z, ⇧⌘Z). Your work is kept in the browser, so clo
 | Polaroid Go | 53.9 × 66.6 mm | 46 × 47 mm | 15 |
 | Wallet | 2½ × 3½ in | full card | 9 |
 | 4 × 6 photo | 4 × 6 in | full card | 3 |
+| 8 × 10 photo | 8 × 10 in | full card | 1 |
 
 Some cards are turned sideways on the sheet when that fits more; they are upright once cut. See [docs/sizes-and-layout.md](docs/sizes-and-layout.md).
 

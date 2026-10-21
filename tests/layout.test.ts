@@ -10,6 +10,7 @@ const EXPECTED: Record<string, number> = {
   "polaroid-go": 15,
   wallet: 9,
   "photo-4x6": 3,
+  "photo-8x10": 1,
 };
 
 describe("sheet layout", () => {

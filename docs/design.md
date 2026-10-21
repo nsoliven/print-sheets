@@ -1,6 +1,6 @@
 # Design
 
-The interface follows the owner's principles. This is how each one shows up.
+The interface follows a short list of principles. This is how each one shows up.
 
 **Show exactly what will print.** The sheet on screen is an SVG drawn in millimetres from the same layout, crop and caption functions the PDF uses. Cards that print sideways appear sideways. Cut lines, bleed and captions are where they will be on paper. Empty spots are the only thing drawn on screen that never prints.
 
@@ -32,11 +32,11 @@ The interface follows the owner's principles. This is how each one shows up.
 
 ## Second pass
 
-After the first working version, the app was compared against two of the owner's apps as a quality bar: the Homebase dashboard (live demo at homebase.nevryk.com) and Camera Toolkit, a native macOS photo app. What changed as a result, on 2026-10-20:
+After the first working version, the app was compared against two other apps by the same author as a quality bar: a homelab dashboard and [Camera Toolkit](https://github.com/nsoliven/camera-toolkit), a native macOS photo app. What changed as a result, on 2026-10-20:
 
 - Prints can be moved between spots and sheets by dragging, as Camera Toolkit sorts by drag and drop. Before, you could not choose which photo went on which sheet.
 - The close-up gained a filmstrip, like Camera Toolkit's preview.
-- Problems surface in the toolbar while you edit, like Homebase's "Needs attention", not only at print time.
+- Problems surface in the toolbar while you edit, like the dashboard's "Needs attention", not only at print time.
 - Every control has a tooltip, with its shortcut where it has one.
 - A first-run nudge to test on plain paper, in the spirit of Camera Toolkit's guided setup.
 - Saving shows a progress bar; the app has a favicon.

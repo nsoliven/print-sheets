@@ -127,6 +127,7 @@ h1, h2, h3, p { margin: 0; }
 .picker-count .muted { font-weight: 400; }
 .picker-check { color: var(--ink); display: grid; place-items: center; }
 .silhouette { display: block; overflow: visible; }
+.sil-clip { display: block; overflow: hidden; border-radius: 2px; }
 .sil-card { fill: var(--surface); stroke: var(--faint); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
 .sil-window { fill: var(--line); }
 .picker-option.is-current .sil-window, .picker-option:hover .sil-window { fill: #d7b98f; }

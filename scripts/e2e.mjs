@@ -107,6 +107,8 @@ for (const [name, file] of [
   ["Instax Wide", "measure-instax-wide.pdf"],
   ["Polaroid Go", "measure-polaroid-go.pdf"],
   ["Wallet", "measure-wallet.pdf"],
+  ["4 × 6 photo", "measure-photo-4x6.pdf"],
+  ["8 × 10 photo", "measure-photo-8x10.pdf"],
 ]) {
   await chooseFormat(name);
   if (!(await page.$(".sheet .card"))) await addPhotos(synthetic);
@@ -236,6 +238,8 @@ await shot("07-polaroid");
 await page.click(".picker-button");
 await shot("08-picker");
 await page.keyboard.press("Escape");
+await chooseFormat("8 × 10 photo");
+await shot("08b-8x10");
 
 await page.emulateMedia({ colorScheme: "dark" });
 await shot("09-dark");
