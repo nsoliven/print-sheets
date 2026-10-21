@@ -66,7 +66,6 @@ export function App() {
   const photosVersion = useStore(photoStore, photoStore.version);
   const f = formatOf(doc.format);
   const per = layoutFor(f).slots.length;
-  const sideways = layoutFor(f).slots.some((s) => s.rotated);
   const sheetCount = sheetsOf(doc);
 
   const [ready, setReady] = useState(false);
@@ -384,7 +383,6 @@ export function App() {
                 <figcaption className="sheet-label">
                   <span>
                     <b>{sheetCount > 1 ? `Sheet ${i + 1}` : "Letter sheet"}</b>
-                    {i === 0 && sideways && <span className="muted"> · some turned sideways to fit more</span>}
                   </span>
                   <span className={`count-pill tabular${used === per ? " is-full" : ""}`} title={`${used} of ${per} spots filled`}>
                     {used} of {per}
@@ -409,24 +407,9 @@ export function App() {
                     <div className="empty-call">
                       <StackArt format={f} />
                       <h1>Add photos to start</h1>
-                      <p className="muted">
-                        Each becomes a true-size {f.name}
-                        {per > 1 ? `, ${per} to a Letter sheet` : ", one to a Letter sheet"}. Drop them anywhere.
-                      </p>
                       <button className="btn btn-primary btn-large" onClick={() => choose({ mode: "append" })}>
                         <ImagePlus size={18} /> Choose photos
                       </button>
-                      <ol className="steps" aria-label="How it works">
-                        <li>
-                          <span>1</span> Add photos
-                        </li>
-                        <li>
-                          <span>2</span> Frame{f.kind === "instant" ? " & caption" : " them"}
-                        </li>
-                        <li>
-                          <span>3</span> Print & cut
-                        </li>
-                      </ol>
                       <p className="privacy">
                         <ShieldCheck size={14} /> Photos stay on this computer
                       </p>
@@ -465,15 +448,7 @@ export function App() {
             </button>
           </div>
         ) : (
-          !empty && (
-            <p className="hint">
-              {busy
-                ? "Opening photos…"
-                : f.kind === "instant"
-                  ? "Drag a photo to frame it and pinch to zoom. Click the white strip to write. Drag the border to move a print."
-                  : "Drag a photo to frame it and pinch to zoom. Option-drag to move a print. Double-click for a close up."}
-            </p>
-          )
+          busy && <p className="hint">Opening photos…</p>
         )}
       </footer>
 

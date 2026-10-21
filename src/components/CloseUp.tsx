@@ -124,9 +124,7 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
             <ChevronRight size={18} />
           </button>
         </div>
-        <p className="closeup-title">
-          <b>{print.caption.trim() || `Print ${index + 1}`}</b> · {f.name}, sheet {Math.floor(index / perSheet) + 1}
-        </p>
+        <span />
         <button className="btn btn-primary" onClick={onClose} title="Back to the sheet (Esc)">
           Done
         </button>
@@ -227,12 +225,8 @@ export function CloseUp({ doc, format: f, id, focus, onClose, onGo }: Props) {
               : tooLong
                 ? "This caption is too long to fit. Try a shorter one."
                 : f.lip
-                  ? "The shaded edge is about where an 8 × 10 frame covers the print. Keep faces inside the dashed line."
-                  : (
-                      <>
-                        Drag to move the photo, pinch or scroll to zoom, <kbd>R</kbd> to turn.
-                      </>
-                    )}
+                  ? "The shaded edge is about where the frame covers the print."
+                  : null}
         </p>
       </div>
 
